@@ -19,7 +19,6 @@ namespace LagrangeProblem
             //_2_9.Solve(4, "Felberg.txt");
             //_2_9.GetDataForGraphics("Felberg.txt", "data.log", 1.0 / 100.0);
             //_2_15.Solve(4, "Felberg.txt");
-            //elnur soset xuy marata
 
             Console.ReadKey();
         }

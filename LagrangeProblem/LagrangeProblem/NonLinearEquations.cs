@@ -36,34 +36,38 @@ namespace LagrangeProblem
     class SystemOfNonLinearEquations //инкапсулирует систему нелинейных уравнений и содержит метод Ньютона
     {
         //начальное значение для метода Ньютона
-        readonly Vector startingArgumentValue;
+        readonly Vector analyticalSolutionForInitialParameter;
+        readonly double initialParameter;
 
         //сама нелинейная векторная функция векторного аргумента
-        readonly Func<Vector, Vector> F;
+        readonly Func<Vector, double, Vector> F;
 
         //собственно, метод Ньютона
-        public Vector ApplyMethodOfNewton(double epsilon)
+        public Vector ApplyMethodOfNewton(double epsilon, Vector initialApproximation, double parameter)
         {
-            Vector functionValue, argumentChange, currentArgumentValue;
+            Vector functionValue, pointChange, currentPoint;
             SquareMatrix jacobianMatrixValue, inverseJacobianMatrixValue;
 
-            currentArgumentValue = startingArgumentValue;
-            functionValue = F(currentArgumentValue);
+            currentPoint = initialApproximation;
+            functionValue = F(currentPoint, parameter);
             sbyte i = 0;
             while (functionValue.Length >= epsilon)
             {
-                jacobianMatrixValue = GetJacobianMatrix(currentArgumentValue);
-                inverseJacobianMatrixValue = jacobianMatrixValue.GetInverseMatrix();
-                argumentChange = -(inverseJacobianMatrixValue * functionValue);
-                currentArgumentValue += argumentChange;
-                functionValue = F(currentArgumentValue);
+                jacobianMatrixValue = GetJacobianMatrix(currentPoint, parameter); //берем матрицу Якоби в данной точке
+                inverseJacobianMatrixValue = jacobianMatrixValue.GetInverseMatrix(); //берем обратную к матрице Якоби
+                //решаем систему линейных уравнений, где неизвестная - приращение аргумента
+                pointChange = -(inverseJacobianMatrixValue * functionValue);
+                //приращаем аргумент
+                currentPoint += pointChange;
+                //вычислям функцию уже в новой точке
+                functionValue = F(currentPoint, parameter);
                 i++;
                 //Если метод Ньютона не сходится, бросаем исключение
                 if (i > 20) throw new NonLinearEquationsException("Method of Newton can't be applied.");
             }
-            return currentArgumentValue;
+            return currentPoint;
         }
-        SquareMatrix GetJacobianMatrix(Vector argument)
+        SquareMatrix GetJacobianMatrix(Vector argument, double parameter)
         {
             double h = 1e-5; //шаг для формулы центральной разности
             double[] argumentChange = new double[argument.Dimension]; //будем использовать для приращения
@@ -74,11 +78,48 @@ namespace LagrangeProblem
             for (sbyte i = 0; i < argument.Dimension; i++)
             {
                 argumentChange[i] = h;
-                partialDerivatives[i] = (F(argument + argumentChange) - F(argument - argumentChange)) * (1 / (2 * h));
+                partialDerivatives[i] =
+                    (F(argument + argumentChange, parameter) - F(argument - argumentChange, parameter)) * (1 / (2 * h));
                 argumentChange[i] = 0.0;
             }
             //объединяем массив векторов в матрицу, которая и будет матрицей Якоби
             return new SquareMatrix(partialDerivatives);
+        }
+        public Vector ApplyParameterContinuationMethod(double epsilon, double finalParameter)
+        {   
+            if(finalParameter <= initialParameter)
+            {
+                throw new NonLinearEquationsException("Incorrect final parameter in parameter continuation method.");
+            }
+            double parameterChange = 0.5;
+            double currentParameter = initialParameter;
+            double nextParameter;
+            Vector solutionForCurrentParameter = analyticalSolutionForInitialParameter;
+            Vector solutionForNextParameter;
+            sbyte i = 0;
+            do
+            {
+                nextParameter = currentParameter + parameterChange;
+                if (nextParameter > finalParameter)
+                {
+                    nextParameter = finalParameter;
+                }
+                try
+                {
+                    solutionForNextParameter = ApplyMethodOfNewton(epsilon, solutionForCurrentParameter, nextParameter);
+                } catch(NonLinearEquationsException)
+                {
+                    parameterChange /= 2;
+                    continue;
+                }
+                currentParameter = nextParameter;
+                solutionForCurrentParameter = solutionForNextParameter;
+                //parameterChange = 0.5;
+                i++;
+                if (i > 8) throw new NonLinearEquationsException("Parameter continuation method can't be applied.");
+            } while (currentParameter < finalParameter - epsilon);
+
+            return solutionForCurrentParameter;
         }
     }
     class NonLinearEquationsException : Exception
