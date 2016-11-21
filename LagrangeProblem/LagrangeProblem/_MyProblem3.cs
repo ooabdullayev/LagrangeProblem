@@ -4,13 +4,15 @@ namespace LagrangeProblem
 {
     class MyProblem3
     {
-        static double parameter = 0.0;
+        static double parameter = 15;
         static Vector f(double t, Vector y, double parameter)
         {
             double y0 = y[1];
-            double y1 = -Math.Cos(y[0]) + Math.Sin(t);
+            double y1 = y[3] - y[0] * Math.Pow(Math.E, -parameter * y[0]);
+            double y2 = y[3] * Math.Pow(Math.E, parameter * y[0]) * (1 - parameter * y[0]);
+            double y3 = -y[2];
 
-            return new Vector(y0, y1);
+            return new Vector(y0, y1, y2, y3);
         }
         static double Lambda(double t, Vector y)
         {
@@ -18,11 +20,11 @@ namespace LagrangeProblem
         }
         static Conditions BuildConditions(Vector components)
         {
-            return new Conditions(0, new Vector(alpha, 0.0));
+            return new Conditions(0.0, new Vector(0.0, components[0], components[1], 0.0));
         }
         static Vector ExtractComponents(Vector y)
         {
-            return y[0];
+            return new Vector(y[0], y[1] + (Math.PI / 2));
         }
 
         static readonly sbyte numOfEquations = 4;

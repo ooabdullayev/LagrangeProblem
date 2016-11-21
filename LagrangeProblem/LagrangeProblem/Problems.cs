@@ -40,9 +40,9 @@ namespace LagrangeProblem
             Vector y_Change; //приращение для "игрик с крышкой"
             double errLocal;
             double lambda;
-
             while (t < point - eps) //каждую итерацию корректируем шаг, и если шаг хороший, шагаем
             {
+                
                 if (t + h > point) h = point - t; //чтобы случайно не перешагнуть следующюю точку
                 SetChanges(method, out yChange, out y_Change, h, y, t, parameter); //получаем приращения для y и y с крышкой
                 errLocal = (yChange - y_Change).Length;
@@ -78,7 +78,6 @@ namespace LagrangeProblem
             yChange = new Vector(numOfEquations);
             y_Change = new Vector(numOfEquations);
             Vector[] k = GetK(method, h, y, t, parameter); //массив векторов k1, k2, ..., ks, в нашем случае s = numOfSteps
-
             for (sbyte i = 0; i < method.numOfSteps; i++)
             {
                 yChange += method.y1[i] * k[i];

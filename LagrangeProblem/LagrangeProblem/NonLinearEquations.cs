@@ -53,8 +53,10 @@ namespace LagrangeProblem
             sbyte i = 0;
             while (functionValue.Length >= epsilon)
             {
-                jacobianMatrixValue = GetJacobianMatrix(currentPoint, epsilon, parameter, method); //берем матрицу Якоби в данной точке
-                inverseJacobianMatrixValue = jacobianMatrixValue.GetInverseMatrix(); //берем обратную к матрице Якоби
+                //берем матрицу Якоби в данной точке
+                jacobianMatrixValue = GetJacobianMatrix(currentPoint, epsilon, parameter, method);
+                //берем обратную к матрице Якоби
+                inverseJacobianMatrixValue = jacobianMatrixValue.GetInverseMatrix();
                 //решаем систему линейных уравнений, где неизвестная - приращение аргумента
                 pointChange = -(inverseJacobianMatrixValue * functionValue);
                 //приращаем аргумент
@@ -63,7 +65,7 @@ namespace LagrangeProblem
                 functionValue = F(currentPoint, epsilon, parameter, method);
                 i++;
                 //Если метод Ньютона не сходится, бросаем исключение
-                if (i > 20) throw new NonLinearEquationsException("Method of Newton can't be applied.");
+                if (i > 10) throw new NonLinearEquationsException("Method of Newton can't be applied.");
             }
             return currentPoint;
         }
@@ -92,7 +94,7 @@ namespace LagrangeProblem
             {
                 throw new NonLinearEquationsException("Incorrect final parameter in parameter continuation method.");
             }
-            double parameterChange = 0.5;
+            double parameterChange = 1.0;
             double currentParameter = initialParameter;
             double nextParameter;
             Vector solutionForCurrentParameter = analyticalSolutionForInitialParameter;
@@ -111,13 +113,14 @@ namespace LagrangeProblem
                 } catch(NonLinearEquationsException)
                 {
                     parameterChange /= 2;
+                    Console.WriteLine(parameterChange);
                     continue;
                 }
                 currentParameter = nextParameter;
                 solutionForCurrentParameter = solutionForNextParameter;
                 //parameterChange = 0.5;
                 i++;
-                if (i > 8) throw new NonLinearEquationsException("Parameter continuation method can't be applied.");
+                if (i > 50) throw new NonLinearEquationsException("Parameter continuation method can't be applied.");
             } while (currentParameter < finalParameter - epsilon);
 
             return solutionForCurrentParameter;
