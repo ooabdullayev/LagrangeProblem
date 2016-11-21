@@ -4,7 +4,8 @@ namespace LagrangeProblem
 {
     class _2_19
     {
-        static Vector f(double t, Vector y)
+        static double parameter = 0.0;
+        static Vector f(double t, Vector y, double parameter)
         {
             double y0 = y[1];
             double y1 = -0.5 * Math.Sin(y[0]) + Math.Sin(t);
@@ -44,7 +45,7 @@ namespace LagrangeProblem
         static double F(double x)
         {
             Conditions conditions = MakeConditions(x);
-            return GetCombinationOfComponents(problem.Solve(method, tLast, conditions, epsilon3).y);
+            return GetCombinationOfComponents(problem.Solve(method, tLast, conditions, epsilon3, parameter).y);
         }
 
         public static void Solve()
@@ -56,12 +57,12 @@ namespace LagrangeProblem
             Conditions foundConditions = MakeConditions(nonLinEquation.ApplyMethodOfChords(epsilon3));
 
             //создаем экземпляр классической задачи Коши из с уже известными начальными условиями
-            ClassicProblem clProblem = new ClassicProblem(foundConditions, tLast, numOfEquations, f, Lambda);
+            CauchyProblem clProblem = new CauchyProblem(foundConditions, tLast, numOfEquations, f, Lambda);
 
             //решаем полученную задачу с разной степенью точности
-            Results results1 = clProblem.Solve(method, requiredNumOfPoints, epsilon1);
-            Results results2 = clProblem.Solve(method, requiredNumOfPoints, epsilon2);
-            Results results3 = clProblem.Solve(method, requiredNumOfPoints, epsilon3);
+            Results results1 = clProblem.Solve(method, requiredNumOfPoints, epsilon1, parameter);
+            Results results2 = clProblem.Solve(method, requiredNumOfPoints, epsilon2, parameter);
+            Results results3 = clProblem.Solve(method, requiredNumOfPoints, epsilon3, parameter);
 
             //создаем визуализатор результатов в консоль
             ResultsRenderer renderer = new ConsoleRenderer();

@@ -4,8 +4,9 @@ namespace LagrangeProblem
 {
     class _2_4
     {
+        static double parameter = 0.0;
         static double value = Math.PI;
-        static Vector f(double t, Vector y)
+        static Vector f(double t, Vector y, double parameter)
         {
             double G = -1 + y[2] * y[2] * (1 - Math.Cos(y[0]) / 3) / 2;
             G -= y[2] * y[2] * y[2] * y[2] * Math.Cos(y[0]) / 48;
@@ -126,13 +127,13 @@ namespace LagrangeProblem
             Method method = new Method(provider);
 
             //Преобразуем нашу задачу к классической задаче Коши при помощи полученного метода
-            ClassicProblem clProblem = problem.ConvertToClassic(method, epsilon3);//
+            CauchyProblem clProblem = problem.ConvertToCauchyProblem(method, epsilon3, parameter);//
             
-            //ClassicProblem clProblem = new ClassicProblem(conditions, 40.0, 4, f, Lambda);
+            //CauchyProblem clProblem = new CauchyProblem(conditions, 40.0, 4, f, Lambda);
             //решаем полученные задачи с разной степенью точности
-            Results results1 = clProblem.Solve(method, numOfPoints, epsilon1);
-            Results results2 = clProblem.Solve(method, numOfPoints, epsilon2);
-            Results results3 = clProblem.Solve(method, numOfPoints, epsilon3);
+            Results results1 = clProblem.Solve(method, numOfPoints, epsilon1, parameter);
+            Results results2 = clProblem.Solve(method, numOfPoints, epsilon2, parameter);
+            Results results3 = clProblem.Solve(method, numOfPoints, epsilon3, parameter);
 
             //создаем визуализатор результатов в консоль
             ResultsRenderer renderer = new ConsoleRenderer();

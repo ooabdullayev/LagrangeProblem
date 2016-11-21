@@ -40,34 +40,34 @@ namespace LagrangeProblem
         readonly double initialParameter;
 
         //сама нелинейная векторная функция векторного аргумента
-        readonly Func<Vector, double, Vector> F;
+        readonly Func<Vector, double, double, Method, Vector> F;
 
         //собственно, метод Ньютона
-        public Vector ApplyMethodOfNewton(double epsilon, Vector initialApproximation, double parameter)
+        public Vector ApplyMethodOfNewton(double epsilon, Vector initialApproximation, double parameter, Method method)
         {
             Vector functionValue, pointChange, currentPoint;
             SquareMatrix jacobianMatrixValue, inverseJacobianMatrixValue;
 
             currentPoint = initialApproximation;
-            functionValue = F(currentPoint, parameter);
+            functionValue = F(currentPoint, epsilon, parameter, method);
             sbyte i = 0;
             while (functionValue.Length >= epsilon)
             {
-                jacobianMatrixValue = GetJacobianMatrix(currentPoint, parameter); //берем матрицу Якоби в данной точке
+                jacobianMatrixValue = GetJacobianMatrix(currentPoint, epsilon, parameter, method); //берем матрицу Якоби в данной точке
                 inverseJacobianMatrixValue = jacobianMatrixValue.GetInverseMatrix(); //берем обратную к матрице Якоби
                 //решаем систему линейных уравнений, где неизвестная - приращение аргумента
                 pointChange = -(inverseJacobianMatrixValue * functionValue);
                 //приращаем аргумент
                 currentPoint += pointChange;
                 //вычислям функцию уже в новой точке
-                functionValue = F(currentPoint, parameter);
+                functionValue = F(currentPoint, epsilon, parameter, method);
                 i++;
                 //Если метод Ньютона не сходится, бросаем исключение
                 if (i > 20) throw new NonLinearEquationsException("Method of Newton can't be applied.");
             }
             return currentPoint;
         }
-        SquareMatrix GetJacobianMatrix(Vector argument, double parameter)
+        SquareMatrix GetJacobianMatrix(Vector argument, double epsilon, double parameter, Method method)
         {
             double h = 1e-5; //шаг для формулы центральной разности
             double[] argumentChange = new double[argument.Dimension]; //будем использовать для приращения
@@ -79,13 +79,14 @@ namespace LagrangeProblem
             {
                 argumentChange[i] = h;
                 partialDerivatives[i] =
-                    (F(argument + argumentChange, parameter) - F(argument - argumentChange, parameter)) * (1 / (2 * h));
+                    (F(argument + argumentChange, epsilon, parameter, method) -
+                        F(argument - argumentChange, epsilon, parameter, method)) * (1 / (2 * h));
                 argumentChange[i] = 0.0;
             }
             //объединяем массив векторов в матрицу, которая и будет матрицей Якоби
             return new SquareMatrix(partialDerivatives);
         }
-        public Vector ApplyParameterContinuationMethod(double epsilon, double finalParameter)
+        public Vector ApplyParameterContinuationMethod(double epsilon, double finalParameter, Method method)
         {   
             if(finalParameter <= initialParameter)
             {
@@ -106,7 +107,7 @@ namespace LagrangeProblem
                 }
                 try
                 {
-                    solutionForNextParameter = ApplyMethodOfNewton(epsilon, solutionForCurrentParameter, nextParameter);
+                    solutionForNextParameter = ApplyMethodOfNewton(epsilon, solutionForCurrentParameter, nextParameter, method);
                 } catch(NonLinearEquationsException)
                 {
                     parameterChange /= 2;
@@ -120,6 +121,13 @@ namespace LagrangeProblem
             } while (currentParameter < finalParameter - epsilon);
 
             return solutionForCurrentParameter;
+        }
+        public SystemOfNonLinearEquations(Vector analyticalSolutionForInitialParameter,
+            double initialParameter, Func<Vector, double, double, Method, Vector> F)
+        {
+            this.analyticalSolutionForInitialParameter = analyticalSolutionForInitialParameter;
+            this.initialParameter = initialParameter;
+            this.F = F;
         }
     }
     class NonLinearEquationsException : Exception

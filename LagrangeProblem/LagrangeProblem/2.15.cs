@@ -4,9 +4,10 @@ namespace LagrangeProblem
 {
     class _2_15
     {
+        static double parameter = 0.0;
         static double alpha = 1.1;
         static double beta = 5.0;
-        static Vector f(double t, Vector y)
+        static Vector f(double t, Vector y, double parameter)
         {
             double y0 = y[1];
             double y1 = y[0] * (1 + t * t) / alpha;
@@ -29,7 +30,7 @@ namespace LagrangeProblem
             Conditions conditions = new Conditions(t0, y0);
 
             //создаем классическую задачу Коши
-            ClassicProblem myProblem = new ClassicProblem(conditions, tLast, numOfEquations, f, Lambda);
+            CauchyProblem myProblem = new CauchyProblem(conditions, tLast, numOfEquations, f, Lambda);
 
             //создаем поставщик метода
             IMethodProvider provider = new FileMethodProvider(fileName);
@@ -38,9 +39,9 @@ namespace LagrangeProblem
             Method method = new Method(provider);
 
             //получаем результаты решения нашего уравнения для трёх разных допустимых погрешностей
-            Results results1 = myProblem.Solve(method, numOfPoints, epsilon1);
-            Results results2 = myProblem.Solve(method, numOfPoints, epsilon2);
-            Results results3 = myProblem.Solve(method, numOfPoints, epsilon3);
+            Results results1 = myProblem.Solve(method, numOfPoints, epsilon1, parameter);
+            Results results2 = myProblem.Solve(method, numOfPoints, epsilon2, parameter);
+            Results results3 = myProblem.Solve(method, numOfPoints, epsilon3, parameter);
             
             //создаем места вывода наших результатов
             ResultsRenderer laTeXRenderer1 = new LaTeXRenderer("tableEps1.tex");

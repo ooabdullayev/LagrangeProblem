@@ -6,8 +6,9 @@ namespace LagrangeProblem
 {
     class _2_9
     {
+        static double parameter = 0.0;
         static double alpha = 0.5;
-        static Vector f(double t, Vector y)
+        static Vector f(double t, Vector y, double parameter)
         {
             double y0 = y[1];
             double y1 = Math.Sin(t) - alpha * Math.Sin(y[0]);
@@ -30,7 +31,7 @@ namespace LagrangeProblem
             Conditions conditions = new Conditions(t0, y0);
 
             //создаем классическую задачу Коши
-            ClassicProblem myProblem = new ClassicProblem(conditions, tLast, numOfEquations, f, Lambda);
+            CauchyProblem myProblem = new CauchyProblem(conditions, tLast, numOfEquations, f, Lambda);
 
             //создаем поставщик метода
             IMethodProvider provider = new FileMethodProvider(fileName);
@@ -39,9 +40,9 @@ namespace LagrangeProblem
             Method method = new Method(provider);
 
             //получаем результаты решения нашего уравнения для трёх разных допустимых погрешностей
-            Results results1 = myProblem.Solve(method, numOfPoints, epsilon1);
-            Results results2 = myProblem.Solve(method, numOfPoints, epsilon2);
-            Results results3 = myProblem.Solve(method, numOfPoints, epsilon3);
+            Results results1 = myProblem.Solve(method, numOfPoints, epsilon1, parameter);
+            Results results2 = myProblem.Solve(method, numOfPoints, epsilon2, parameter);
+            Results results3 = myProblem.Solve(method, numOfPoints, epsilon3, parameter);
             
             //создаем места вывода наших результатов
             ResultsRenderer laTeXRenderer1 = new LaTeXRenderer("tableEps1.tex");
@@ -78,7 +79,7 @@ namespace LagrangeProblem
             StreamWriter outputFile = new StreamWriter(outputFileName);
 
             //создаем классическую задачу Коши
-            ClassicProblem myProblem = new ClassicProblem(conditions, tLast, numOfEquations, f, Lambda);
+            CauchyProblem myProblem = new CauchyProblem(conditions, tLast, numOfEquations, f, Lambda);
 
             //создаем поставщик метода
             IMethodProvider provider = new FileMethodProvider(methodFileName);
@@ -90,7 +91,7 @@ namespace LagrangeProblem
 
             for(alpha = step; alpha < 1; alpha += step)
             {
-                result = myProblem.Solve(method, numOfPoints, epsilon)[0];
+                result = myProblem.Solve(method, numOfPoints, epsilon, parameter)[0];
                 outputFile.WriteLine(alpha.ToString("G", CultureInfo.InvariantCulture) + "\t" + result.y[1].ToString("G", CultureInfo.InvariantCulture));
             }
             outputFile.Close();

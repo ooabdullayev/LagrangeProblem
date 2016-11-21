@@ -4,7 +4,8 @@ namespace LagrangeProblem
 {
     class _2_2
     {
-        static Vector f(double t, Vector y)
+        static double parameter = 0.0;
+        static Vector f(double t, Vector y, double parameter)
         {
             double y0 = y[1];
             double y1 = 2 * y[0] * (2 * y[0] * y[0] - 1);
@@ -43,7 +44,7 @@ namespace LagrangeProblem
             Conditions conditions = new Conditions(t0, y0);
 
             //создаем классическую задачу Коши
-            ClassicProblem myProblem = new ClassicProblem(conditions, tLast, numOfEquations, f, Lambda);
+            CauchyProblem myProblem = new CauchyProblem(conditions, tLast, numOfEquations, f, Lambda);
 
             //создаем поставщиков разных методов
             IMethodProvider provider1 = new FileMethodProvider(fileName1);
@@ -54,13 +55,13 @@ namespace LagrangeProblem
             Method method2 = new Method(provider2);
 
             //получаем результаты решения нашего уравнения для трёх разных допустимых погрешностей
-            Results results11 = myProblem.Solve(method1, numOfPoints, epsilon1);
-            Results results12 = myProblem.Solve(method1, numOfPoints, epsilon2);
-            Results results13 = myProblem.Solve(method1, numOfPoints, epsilon3);
+            Results results11 = myProblem.Solve(method1, numOfPoints, epsilon1, parameter);
+            Results results12 = myProblem.Solve(method1, numOfPoints, epsilon2, parameter);
+            Results results13 = myProblem.Solve(method1, numOfPoints, epsilon3, parameter);
 
-            Results results21 = myProblem.Solve(method2, numOfPoints, epsilon1);
-            Results results22 = myProblem.Solve(method2, numOfPoints, epsilon2);
-            Results results23 = myProblem.Solve(method2, numOfPoints, epsilon3);
+            Results results21 = myProblem.Solve(method2, numOfPoints, epsilon1, parameter);
+            Results results22 = myProblem.Solve(method2, numOfPoints, epsilon2, parameter);
+            Results results23 = myProblem.Solve(method2, numOfPoints, epsilon3, parameter);
             
             //создаем места вывода наших результатов
             ResultsRenderer laTeXRenderer1 = new LaTeXRenderer("tableEps1.tex");
