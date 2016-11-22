@@ -2,48 +2,52 @@
 
 namespace LagrangeProblem
 {
-    class NonLinearEquation //инкапсулирует нелинейное уравнение и содержит метод хорд
+    class OneNonLinearEquation //инкапсулирует нелинейное уравнение и содержит метод хорд
     {
         //данные начальные точки для метода хорд
         readonly double previousStartingPoint;
         readonly double nextStartingPoint;
 
         //сама нелинейная функция
-        readonly Func<double, double> F;
+        readonly Func<double, double, double, Method, double> F;
 
-        public double ApplyMethodOfChords(double epsilon)
+        public double ApplyMethodOfChords(double epsilon, double parameter, Method method)
         {
             double previousPoint = previousStartingPoint;
             double nextPoint = nextStartingPoint;
-            double nextValue = F(nextPoint);
-            double previousValue = F(previousPoint);
+            double nextValue = F(nextPoint, epsilon, parameter, method);
+            double previousValue = F(previousPoint, epsilon, parameter, method);
 
             while (Math.Abs(nextValue) >= epsilon)
             {
                 nextPoint = nextPoint - nextValue * (nextPoint - previousPoint) / (nextValue - previousValue);
-                nextValue = F(nextPoint);
+                nextValue = F(nextPoint, epsilon, parameter, method);
             }
             return nextValue;
         }
 
-        public NonLinearEquation(double previousStartingPoint, double nextStartingPoint, Func<double, double> F)
+        public OneNonLinearEquation(double previousStartingPoint,
+            double nextStartingPoint, Func<double, double, double, Method, double> F)
         {
             this.previousStartingPoint = previousStartingPoint;
             this.nextStartingPoint = nextStartingPoint;
             this.F = F;
         }
     }
-    class SystemOfNonLinearEquations //инкапсулирует систему нелинейных уравнений и содержит метод Ньютона
+    //инкапсулирует систему нелинейных уравнений и содержит метод Ньютона и метод продолжения по параметру
+    class SystemOfNonLinearEquations
     {
         //начальное значение для метода Ньютона
         readonly Vector analyticalSolutionForInitialParameter;
+        //параметр, при котором получено начальное значение
         readonly double initialParameter;
 
         //сама нелинейная векторная функция векторного аргумента
         readonly Func<Vector, double, double, Method, Vector> F;
 
         //собственно, метод Ньютона
-        public Vector ApplyMethodOfNewton(double epsilon, Vector initialApproximation, double parameter, Method method)
+        public Vector ApplyMethodOfNewton(double epsilon,
+            Vector initialApproximation, double parameter, Method method)
         {
             Vector functionValue, pointChange, currentPoint;
             SquareMatrix jacobianMatrixValue, inverseJacobianMatrixValue;
@@ -90,11 +94,12 @@ namespace LagrangeProblem
         }
         public Vector ApplyParameterContinuationMethod(double epsilon, double finalParameter, Method method)
         {   
-            if(finalParameter <= initialParameter)
+            if(finalParameter < initialParameter)
             {
                 throw new NonLinearEquationsException("Incorrect final parameter in parameter continuation method.");
             }
-            double parameterChange = finalParameter;
+            //начальный шаг берем самый большой (чтобы сразу достичь конечного параметра)
+            double parameterChange = finalParameter - initialParameter;
             double currentParameter = initialParameter;
             double nextParameter;
             Vector solutionForCurrentParameter = analyticalSolutionForInitialParameter;
@@ -102,21 +107,23 @@ namespace LagrangeProblem
             sbyte i = 0;
             do
             {
-                nextParameter = currentParameter + parameterChange;
-                if (nextParameter > finalParameter)
+                nextParameter = currentParameter + parameterChange; //шагаем
+                if (nextParameter > finalParameter) //чтоб не перешагнуть
                 {
                     nextParameter = finalParameter;
                 }
                 try
                 {
-                    solutionForNextParameter = ApplyMethodOfNewton(epsilon, solutionForCurrentParameter, nextParameter, method);
+                    //пробуем применить метод Ньютона для данного шага
+                    solutionForNextParameter = ApplyMethodOfNewton(epsilon,
+                        solutionForCurrentParameter, nextParameter, method);
                 }
                 catch (Exception exception)
                 {
+                    //если попытка прошла неудачно, укорачиваем шаг в два раза
                     if(exception is NonLinearEquationsException || exception is ProblemException)
                     {
                         parameterChange /= 2;
-                        Console.WriteLine(parameterChange);
                         continue;
                     }
                     throw;
@@ -125,6 +132,7 @@ namespace LagrangeProblem
                 solutionForCurrentParameter = solutionForNextParameter;
                 //parameterChange = finalParameter;
                 i++;
+                //если метод продолжения по параметру не сходится, бросаем исключение
                 if (i > 50) throw new NonLinearEquationsException("Parameter continuation method can't be applied.");
             } while (currentParameter < finalParameter - epsilon);
 

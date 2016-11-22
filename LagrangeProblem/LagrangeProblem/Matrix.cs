@@ -2,7 +2,7 @@
 
 namespace LagrangeProblem
 {
-    public class SquareMatrix
+    class SquareMatrix
     {
         readonly double[,] components; //для хранения элементов матрицы
         public sbyte Dimension //размерность квадратной матрицы

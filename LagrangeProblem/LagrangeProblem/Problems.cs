@@ -6,9 +6,12 @@ namespace LagrangeProblem
     class Problem //инкапсулирует систему уравнений с начальными условиями
     {
         public readonly sbyte numOfEquations; //число дифференциальных уравнений первого порядка в системе
-        public readonly Func<double, Vector, double, Vector> f; //векторная функция, стоящая в правой части системы уравнений
-        public readonly Func<double, Vector, double> Lambda; //функция от t, используюящаяся в вычислении глобальной погрешности
+        //векторная функция, стоящая в правой части системы уравнений
+        protected readonly Func<double, Vector, double, Vector> f;
+        //функция от t, используюящаяся в вычислении глобальной погрешности
+        protected readonly Func<double, Vector, double, double> Lambda;
 
+        //решает в нескольких точках
         public Results Solve(Method method, Points points, Conditions conditions, double eps, double parameter)
         {
             if (conditions.t0 >= points[0]) throw new ProblemException("Points and conditions are not compatible.");
@@ -24,6 +27,7 @@ namespace LagrangeProblem
             }
             return new Results(results, eps);
         }
+        //решает только в одной точке
         public Result Solve(Method method, double point, Conditions conditions, double eps, double parameter)
         {
             double h = 1;
@@ -48,13 +52,14 @@ namespace LagrangeProblem
                 errLocal = (yChange - y_Change).Length;
                 if (errLocal < eps)
                 {
-                    lambda = Lambda(t, y); //вычисляем её именно здесь, так как нужно значение в предыдущей точке
+                    lambda = Lambda(t, y, parameter); //вычисляем её именно здесь, так как нужно значение в предыдущей точке
                     t += h; //переходим к следующей точке
                     y += yChange; //получаем значение в следующей точке
                     errGlobal = errLocal + errGlobal * Math.Pow(Math.E, lambda * h);
                 }
                 h = GetHNew(method, errLocal, eps, h);
                 i++;
+                //если не удается решить задачу Коши за чрезчур большое число итераций
                 if(i > 15000)
                 {
                     throw new ProblemException("Cauchy problem can't be solved.");
@@ -62,8 +67,8 @@ namespace LagrangeProblem
             }
             return y;
         }
-
-        Vector[] GetK(Method method, double h, Vector y, double t, double parameter) //возвращает числа k1, k2, ..., ks для явного метода РК
+        //возвращает числа k1, k2, ..., ks для явного метода РК
+        Vector[] GetK(Method method, double h, Vector y, double t, double parameter)
         {
             Vector temp; //вспомогательная переменная для хранения частичной суммы
             Vector[] k = new Vector[method.numOfSteps]; //массив векторов k1, k2, ..., ks, в нашем случае s = numOfSteps
@@ -78,11 +83,13 @@ namespace LagrangeProblem
             return k;
         }
         //вычисляет приращение для y и y с крышкой
-        protected void SetChanges(Method method, out Vector yChange, out Vector y_Change, double h, Vector y, double t, double parameter)
+        protected void SetChanges(Method method, out Vector yChange,
+            out Vector y_Change, double h, Vector y, double t, double parameter)
         {
             yChange = new Vector(numOfEquations);
             y_Change = new Vector(numOfEquations);
-            Vector[] k = GetK(method, h, y, t, parameter); //массив векторов k1, k2, ..., ks, в нашем случае s = numOfSteps
+            //массив векторов k1, k2, ..., ks, в нашем случае s = numOfSteps
+            Vector[] k = GetK(method, h, y, t, parameter);
             for (sbyte i = 0; i < method.numOfSteps; i++)
             {
                 yChange += method.y1[i] * k[i];
@@ -99,7 +106,8 @@ namespace LagrangeProblem
             return 0.9 * h / kappa;
         }
 
-        public Problem(sbyte numOfEquations, Func<double, Vector, double, Vector> f, Func<double, Vector, double> Lambda)
+        public Problem(sbyte numOfEquations,
+            Func<double, Vector, double, Vector> f,Func<double, Vector, double, double> Lambda)
         {
             if (numOfEquations < 1) throw new ProblemException("Incorrect number of equations.");
 
@@ -110,7 +118,7 @@ namespace LagrangeProblem
     }
     class CauchyProblem : Problem
     {
-        public readonly Conditions conditions;
+        public readonly Conditions conditions; //начальные условия
         public readonly double tLast;
 
         public Results Solve(Method method, sbyte numOfPoints, double eps, double parameter)
@@ -119,13 +127,17 @@ namespace LagrangeProblem
             return Solve(method, points, conditions, eps, parameter);
         }
 
-        public CauchyProblem(Conditions conditions, double tLast, sbyte numOfEquations,
-            Func<double, Vector, double, Vector> f, Func<double, Vector, double> Lambda) : base(numOfEquations, f, Lambda)
+        public CauchyProblem(Conditions conditions, double tLast,
+            sbyte numOfEquations, Func<double, Vector, double, Vector> f,
+                Func<double, Vector,double, double> Lambda) : base(numOfEquations, f, Lambda)
         {
             this.conditions = conditions;
             this.tLast = tLast;
         }
     }
+    //класс, решающий задачу для фиксированного параметра
+    //необходим, чтобы когда мы получили начальные условия для задачи Коши для с заданным параметром, мы по ошибке
+    //не решали данную задачу с другим параметром
     class CauchyProblemWithFixedParameter : CauchyProblem
     {
         public readonly double parameter;
@@ -137,16 +149,18 @@ namespace LagrangeProblem
 
         public CauchyProblemWithFixedParameter(double parameter,
             Conditions conditions, double tLast, sbyte numOfEquations, Func<double, Vector, double, Vector> f,
-                Func<double, Vector, double> Lambda) : base(conditions, tLast, numOfEquations, f, Lambda)
+                Func<double, Vector, double, double> Lambda) : base(conditions, tLast, numOfEquations, f, Lambda)
         {
             this.parameter = parameter;
         }
     }
     class LagrangeProblem : Problem
     {
+        //строит полные начальные условия из значений, полученных для неизвестных начальных условий
         readonly Func<Vector, Conditions> BuildConditions;
+        //извлекает известные конечные условия
         readonly Func<Vector, Vector> ExtractComponents;
-        readonly double tLast;
+        public readonly double tLast;
         
         readonly SystemOfNonLinearEquations systemOfNonLinearEquations;
 
@@ -156,38 +170,83 @@ namespace LagrangeProblem
             return ExtractComponents(Solve(method, tLast, conditions, epsilon, parameter).y);
         }
 
+        //метод, для получения из задачи Лагранжа задачи Коши с помощью вычисления начальных условий
         public CauchyProblemWithFixedParameter ConvertToCauchyProblem(double epsilon, double parameter, Method method)
         {
+            //находим неизвестные начальные условия
             Vector foundComponentsOfConditions =
                 systemOfNonLinearEquations.ApplyParameterContinuationMethod(epsilon, parameter, method);
+            //составляем из них полные начальные условия
             Conditions conditions = BuildConditions(foundComponentsOfConditions);
             return new CauchyProblemWithFixedParameter(parameter, conditions, tLast, numOfEquations, f, Lambda);
         }
 
-        public LagrangeProblem(Func<Vector, Conditions> BuildConditions, Func<Vector, Vector> ExtractComponents,
-            double tLast, double initialParameter, Vector analyticalSolutionForInitialParameter,
-            sbyte numOfEquations, Func<double, Vector, double, Vector> f, Func<double, Vector, double> Lambda) : base(numOfEquations, f, Lambda)
+        public LagrangeProblem(Func<Vector, Conditions> BuildConditions,
+            Func<Vector, Vector> ExtractComponents, double tLast, double initialParameter,
+                Vector analyticalSolutionForInitialParameter, sbyte numOfEquations, Func<double, Vector,
+                    double, Vector> f, Func<double, Vector, double, double> Lambda) : base(numOfEquations, f, Lambda)
         {
             this.BuildConditions = BuildConditions;
             this.ExtractComponents = ExtractComponents;
             this.tLast = tLast;
-            systemOfNonLinearEquations = new SystemOfNonLinearEquations(analyticalSolutionForInitialParameter, initialParameter, F);
+            systemOfNonLinearEquations =
+                new SystemOfNonLinearEquations(analyticalSolutionForInitialParameter, initialParameter, F);
         }
     }
-    class UnknownPointProblem : Problem //система уравнений с заданным значением в конечной точке (но сама точка не задана)
+    class UnknownCondProblem : Problem
+    {
+        //строит полные начальные условия из значений, полученных для неизвестных начальных условий
+        readonly Func<double, Conditions> BuildConditions;
+        //извлекает известные конечные условия
+        readonly Func<Vector, double> ExtractComponents;
+        public readonly double tLast;
+
+        readonly OneNonLinearEquation nonLinearEquation;
+
+        double F(double x, double epsilon, double parameter, Method method)
+        {
+            Conditions conditions = BuildConditions(x);
+            return ExtractComponents(Solve(method, tLast, conditions, epsilon, parameter).y);
+        }
+
+        //метод, для получения из задачи с неполными начальными условиями
+        //задачи Коши с помощью вычисления начальных условий
+        public CauchyProblemWithFixedParameter ConvertToCauchyProblem(double epsilon, double parameter, Method method)
+        {
+            //находим неизвестное начальное условие
+            double foundComponentOfConditions =
+                nonLinearEquation.ApplyMethodOfChords(epsilon, parameter, method);
+            //составляем из него полное начальное условие
+            Conditions conditions = BuildConditions(foundComponentOfConditions);
+            return new CauchyProblemWithFixedParameter(parameter, conditions, tLast, numOfEquations, f, Lambda);
+        }
+
+        public UnknownCondProblem(Func<double, Conditions> BuildConditions,
+            Func<Vector, double> ExtractComponents, double tLast, double previousStartingPoint,
+                double nextStartingPoint, sbyte numOfEquations, Func<double, Vector, double, Vector> f,
+                    Func<double, Vector, double, double> Lambda) : base(numOfEquations, f, Lambda)
+        {
+            this.BuildConditions = BuildConditions;
+            this.ExtractComponents = ExtractComponents;
+            this.tLast = tLast;
+            nonLinearEquation = new OneNonLinearEquation(previousStartingPoint, nextStartingPoint, F);
+        }
+    }
+    //система уравнений с заданным значением в конечной точке (но сама точка не задана)
+    class UnknownPointProblem : Problem
     {
         public readonly Conditions conditions;
         //специальная корректировка шага, определяемая конкретной задачей
-        public readonly Func<Vector, Vector, double, double, double> AdjustStep;
+        readonly Func<Vector, Vector, double, double, double> AdjustStep;
         //проверка на достижение нужной точки
-        public readonly Func<Vector, double, bool> IsPointReached;
+        readonly Func<Vector, double, bool> IsPointReached;
 
         public CauchyProblem ConvertToCauchyProblem(Method method, double eps, double parameter)
         {
             double tLast = GetPoint(method, eps, parameter);
             return new CauchyProblem(conditions, tLast, numOfEquations, f, Lambda);
         }
-        public double GetPoint(Method method, double eps, double parameter)
+        double GetPoint(Method method, double eps, double parameter)
         {
             double h = 1;
             double hAdjusted;
@@ -223,7 +282,7 @@ namespace LagrangeProblem
         }
 
         public UnknownPointProblem(Conditions conditions, sbyte numOfEquations,
-            Func<double, Vector, double, Vector> f, Func<double, Vector, double> Lambda, Func<Vector, Vector, double,
+            Func<double, Vector, double, Vector> f, Func<double, Vector, double, double> Lambda, Func<Vector, Vector, double,
                 double, double> AdjustStep, Func<Vector, double, bool> IsPointReached) : base(numOfEquations, f, Lambda)
         {
             this.conditions = conditions;

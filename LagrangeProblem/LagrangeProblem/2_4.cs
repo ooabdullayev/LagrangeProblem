@@ -4,7 +4,7 @@ namespace LagrangeProblem
 {
     class _2_4
     {
-        static double parameter = 0.0;
+        static readonly double parameter = 0.0; //заглушка
         static double value = Math.PI;
         static Vector f(double t, Vector y, double parameter)
         {
@@ -34,7 +34,7 @@ namespace LagrangeProblem
 
             return new Vector(y0, y1, y2, y3);
         }
-        static double Lambda(double t, Vector y)
+        static double Lambda(double t, Vector y, double parameter)
         {
             double G = -1 + y[2] * y[2] * (1 - Math.Cos(y[0]) / 3) / 2;
             G -= y[2] * y[2] * y[2] * y[2] * Math.Cos(y[0]) / 48;
@@ -105,17 +105,17 @@ namespace LagrangeProblem
                 return true;
             return false;
         }
-        public static void Solve(sbyte numOfPoints, string fileName)
-        {
-            sbyte numOfEquations = 4;//
-            double t0 = 0;
-            Vector y0 = new Vector(Math.PI / 2, 0, Math.Sqrt(2), 0);
-            double epsilon1 = 1e-7;
-            double epsilon2 = 1e-9;
-            double epsilon3 = 1e-11;
 
-            Conditions conditions = new Conditions(t0, y0);
-            
+        static readonly sbyte numOfEquations = 4;
+        static readonly string fileName = "../../Felberg.txt";
+        static readonly Conditions conditions = new Conditions(0.0, new Vector(Math.PI / 2, 0, Math.Sqrt(2), 0));
+        static readonly double epsilon1 = 1e-7;
+        static readonly double epsilon2 = 1e-9;
+        static readonly double epsilon3 = 1e-11;
+        static readonly sbyte requiredNumberOfPoints = 4;
+
+        public static void Solve()
+        {
             //создаем задачу с неизвестной конечной точкой
             UnknownPointProblem problem =//
                 new UnknownPointProblem(conditions, numOfEquations, f, Lambda, AdjustStep, IsPointReached);//
@@ -127,13 +127,13 @@ namespace LagrangeProblem
             Method method = new Method(provider);
 
             //Преобразуем нашу задачу к классической задаче Коши при помощи полученного метода
-            CauchyProblem clProblem = problem.ConvertToCauchyProblem(method, epsilon3, parameter);//
-            
+            CauchyProblem clProblem = problem.ConvertToCauchyProblem(method, epsilon3, parameter);
+
             //CauchyProblem clProblem = new CauchyProblem(conditions, 40.0, 4, f, Lambda);
             //решаем полученные задачи с разной степенью точности
-            Results results1 = clProblem.Solve(method, numOfPoints, epsilon1, parameter);
-            Results results2 = clProblem.Solve(method, numOfPoints, epsilon2, parameter);
-            Results results3 = clProblem.Solve(method, numOfPoints, epsilon3, parameter);
+            Results results1 = clProblem.Solve(method, requiredNumberOfPoints, epsilon1, parameter);
+            Results results2 = clProblem.Solve(method, requiredNumberOfPoints, epsilon2, parameter);
+            Results results3 = clProblem.Solve(method, requiredNumberOfPoints, epsilon3, parameter);
 
             //создаем визуализатор результатов в консоль
             ResultsRenderer renderer = new ConsoleRenderer();

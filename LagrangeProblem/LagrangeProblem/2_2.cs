@@ -4,7 +4,7 @@ namespace LagrangeProblem
 {
     class _2_2
     {
-        static double parameter = 0.0;
+        static readonly double parameter = 0.1;
         static Vector f(double t, Vector y, double parameter)
         {
             double y0 = y[1];
@@ -15,7 +15,7 @@ namespace LagrangeProblem
 
             return new Vector(y0, y1, y2, y3);
         }
-        static double Lambda(double t, Vector y)
+        static double Lambda(double t, Vector y, double parameter)
         {
             double u, v;
             double result;
@@ -32,17 +32,20 @@ namespace LagrangeProblem
             return Math.Sqrt(result);
 
         }
-        public static void Solve(double alpha, sbyte numOfPoints, string fileName1, string fileName2)
-        {
-            sbyte numOfEquations = 4;
-            double t0 = 0;
-            double tLast = 50;
-            Vector y0 = new Vector(alpha, 0, alpha * alpha * (1 - alpha * alpha), 0);
-            double epsilon1 = 1e-7;
-            double epsilon2 = 1e-9;
-            double epsilon3 = 1e-11;
-            Conditions conditions = new Conditions(t0, y0);
 
+        static readonly sbyte numOfEquations = 4;
+        static readonly string fileName1 = "../../Felberg.txt";
+        static readonly string fileName2 = "../../DormanPrince.txt";
+        static readonly double tLast = 50.0;
+        static readonly double epsilon1 = 1e-7;
+        static readonly double epsilon2 = 1e-9;
+        static readonly double epsilon3 = 1e-11;
+        static readonly Conditions conditions =
+            new Conditions(0.0, new Vector(parameter, 0.0, parameter * parameter * (1 - parameter * parameter), 0.0));
+        static readonly sbyte requiredNumberOfPoints = 4;
+
+        public static void Solve()
+        {
             //создаем классическую задачу Коши
             CauchyProblem myProblem = new CauchyProblem(conditions, tLast, numOfEquations, f, Lambda);
 
@@ -55,14 +58,14 @@ namespace LagrangeProblem
             Method method2 = new Method(provider2);
 
             //получаем результаты решения нашего уравнения для трёх разных допустимых погрешностей
-            Results results11 = myProblem.Solve(method1, numOfPoints, epsilon1, parameter);
-            Results results12 = myProblem.Solve(method1, numOfPoints, epsilon2, parameter);
-            Results results13 = myProblem.Solve(method1, numOfPoints, epsilon3, parameter);
+            Results results11 = myProblem.Solve(method1, requiredNumberOfPoints, epsilon1, parameter);
+            Results results12 = myProblem.Solve(method1, requiredNumberOfPoints, epsilon2, parameter);
+            Results results13 = myProblem.Solve(method1, requiredNumberOfPoints, epsilon3, parameter);
 
-            Results results21 = myProblem.Solve(method2, numOfPoints, epsilon1, parameter);
-            Results results22 = myProblem.Solve(method2, numOfPoints, epsilon2, parameter);
-            Results results23 = myProblem.Solve(method2, numOfPoints, epsilon3, parameter);
-            
+            Results results21 = myProblem.Solve(method2, requiredNumberOfPoints, epsilon1, parameter);
+            Results results22 = myProblem.Solve(method2, requiredNumberOfPoints, epsilon2, parameter);
+            Results results23 = myProblem.Solve(method2, requiredNumberOfPoints, epsilon3, parameter);
+
             //создаем места вывода наших результатов
             ResultsRenderer laTeXRenderer1 = new LaTeXRenderer("tableEps1.tex");
             ResultsRenderer laTeXRenderer2 = new LaTeXRenderer("tableEps2.tex");

@@ -4,7 +4,7 @@ namespace LagrangeProblem
 {
     class _2_19
     {
-        static double parameter = 0.0;
+        static readonly double parameter = 0.0; //заглушка
         static Vector f(double t, Vector y, double parameter)
         {
             double y0 = y[1];
@@ -12,15 +12,17 @@ namespace LagrangeProblem
 
             return new Vector(y0, y1);
         }
-        static double Lambda(double t, Vector y)
+        static double Lambda(double t, Vector y, double parameter)
         {
             return 0.5 - 0.25 * Math.Cos(y[0]);
         }
-        static Conditions MakeConditions(double alpha)
+        //строит полные начальные условия из значений, полученных для неизвестных начальных условий
+        static Conditions BuildConditions(double component)
         {
-            return new Conditions(0, new Vector(0.0, alpha));
+            return new Conditions(0, new Vector(0.0, component));
         }
-        static double GetCombinationOfComponents(Vector y)
+        //извлекает известные конечные условия
+        static double ExtractComponents(Vector y)
         {
             return y[1];
         }
@@ -35,34 +37,27 @@ namespace LagrangeProblem
         static readonly double nextStartingPoint = -1.0;
         static readonly sbyte requiredNumOfPoints = 4;
 
-        //Создаем экземпляр задачи
-        static readonly Problem problem = new Problem(numOfEquations, f, Lambda);
-        //создаем поставщик данных метода
-        static readonly IMethodProvider provider = new FileMethodProvider(fileName);
-        //создаем метод из данных, полученных от поставщика
-        static readonly Method method = new Method(provider);
-        //задаем функцию для нелинейного уравнения с одной неизвестной
-        static double F(double x)
-        {
-            Conditions conditions = MakeConditions(x);
-            return GetCombinationOfComponents(problem.Solve(method, tLast, conditions, epsilon3, parameter).y);
-        }
-
         public static void Solve()
         {
-            //создаем нелинейное уравнение с одной неизвестной
-            NonLinearEquation nonLinEquation = new NonLinearEquation(previousStartingPoint, nextStartingPoint, F);
+            //Создаем экземпляр задачи
+            UnknownCondProblem problem =
+                new UnknownCondProblem(BuildConditions, ExtractComponents, tLast,
+                    previousStartingPoint, nextStartingPoint, numOfEquations, f, Lambda);
 
-            //решаем уравнение методом хорд и из корня составляем полные начальные условия для задачи Коши
-            Conditions foundConditions = MakeConditions(nonLinEquation.ApplyMethodOfChords(epsilon3));
+            //создаем поставщик данных метода
+            IMethodProvider provider = new FileMethodProvider(fileName);
 
-            //создаем экземпляр классической задачи Коши из с уже известными начальными условиями
-            CauchyProblem clProblem = new CauchyProblem(foundConditions, tLast, numOfEquations, f, Lambda);
+            //создаем метод из данных, полученных от поставщика
+            Method method = new Method(provider);
+
+            //найдем начальные условия в задаче, и составим из них задачу Коши
+            CauchyProblemWithFixedParameter cauchyProblem =
+                problem.ConvertToCauchyProblem(epsilon3, parameter, method);
 
             //решаем полученную задачу с разной степенью точности
-            Results results1 = clProblem.Solve(method, requiredNumOfPoints, epsilon1, parameter);
-            Results results2 = clProblem.Solve(method, requiredNumOfPoints, epsilon2, parameter);
-            Results results3 = clProblem.Solve(method, requiredNumOfPoints, epsilon3, parameter);
+            Results results1 = cauchyProblem.Solve(method, requiredNumOfPoints, epsilon1, parameter);
+            Results results2 = cauchyProblem.Solve(method, requiredNumOfPoints, epsilon2, parameter);
+            Results results3 = cauchyProblem.Solve(method, requiredNumOfPoints, epsilon3, parameter);
 
             //создаем визуализатор результатов в консоль
             ResultsRenderer renderer = new ConsoleRenderer();

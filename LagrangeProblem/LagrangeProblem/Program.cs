@@ -14,11 +14,10 @@ namespace LagrangeProblem
         {
             //_2_18.Solve();
             //_2_19.Solve();
-            //_2_2.Solve(0.1, 4, "Felberg.txt", "DormanPrince.txt");
-            //_2_4.Solve(4, "DormanPrince.txt");
-            //_2_9.Solve(4, "Felberg.txt");
-            //_2_9.GetDataForGraphics("Felberg.txt", "data.log", 1.0 / 100.0);
-            //_2_15.Solve(4, "Felberg.txt");
+            //_2_2.Solve();
+            //_2_4.Solve();
+            //_2_9.Solve();
+            //_2_15.Solve();
             MyProblem3.Solve();
 
             Console.ReadKey();
