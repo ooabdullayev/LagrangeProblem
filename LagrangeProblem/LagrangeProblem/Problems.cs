@@ -40,9 +40,9 @@ namespace LagrangeProblem
             Vector y_Change; //приращение для "игрик с крышкой"
             double errLocal;
             double lambda;
+            int i = 0;
             while (t < point - eps) //каждую итерацию корректируем шаг, и если шаг хороший, шагаем
             {
-                
                 if (t + h > point) h = point - t; //чтобы случайно не перешагнуть следующюю точку
                 SetChanges(method, out yChange, out y_Change, h, y, t, parameter); //получаем приращения для y и y с крышкой
                 errLocal = (yChange - y_Change).Length;
@@ -54,6 +54,11 @@ namespace LagrangeProblem
                     errGlobal = errLocal + errGlobal * Math.Pow(Math.E, lambda * h);
                 }
                 h = GetHNew(method, errLocal, eps, h);
+                i++;
+                if(i > 15000)
+                {
+                    throw new ProblemException("Cauchy problem can't be solved.");
+                }
             }
             return y;
         }

@@ -94,7 +94,7 @@ namespace LagrangeProblem
             {
                 throw new NonLinearEquationsException("Incorrect final parameter in parameter continuation method.");
             }
-            double parameterChange = 1.0;
+            double parameterChange = finalParameter;
             double currentParameter = initialParameter;
             double nextParameter;
             Vector solutionForCurrentParameter = analyticalSolutionForInitialParameter;
@@ -110,15 +110,20 @@ namespace LagrangeProblem
                 try
                 {
                     solutionForNextParameter = ApplyMethodOfNewton(epsilon, solutionForCurrentParameter, nextParameter, method);
-                } catch(NonLinearEquationsException)
+                }
+                catch (Exception exception)
                 {
-                    parameterChange /= 2;
-                    Console.WriteLine(parameterChange);
-                    continue;
+                    if(exception is NonLinearEquationsException || exception is ProblemException)
+                    {
+                        parameterChange /= 2;
+                        Console.WriteLine(parameterChange);
+                        continue;
+                    }
+                    throw;
                 }
                 currentParameter = nextParameter;
                 solutionForCurrentParameter = solutionForNextParameter;
-                //parameterChange = 0.5;
+                //parameterChange = finalParameter;
                 i++;
                 if (i > 50) throw new NonLinearEquationsException("Parameter continuation method can't be applied.");
             } while (currentParameter < finalParameter - epsilon);
