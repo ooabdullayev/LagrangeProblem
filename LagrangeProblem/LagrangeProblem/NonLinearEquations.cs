@@ -46,7 +46,7 @@ namespace LagrangeProblem
         readonly Func<Vector, double, double, Method, Vector> F;
 
         //собственно, метод Ньютона
-        public Vector ApplyMethodOfNewton(double epsilon,
+        Vector ApplyMethodOfNewton(double epsilon,
             Vector initialApproximation, double parameter, Method method)
         {
             Vector functionValue, pointChange, currentPoint;

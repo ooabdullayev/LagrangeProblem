@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="2.15.cs" />
+    <Compile Include="_QazanfarsProblem.cs" />
     <Compile Include="_MyProblem3.cs" />
     <Compile Include="2_18.cs" />
     <Compile Include="2_19.cs" />
