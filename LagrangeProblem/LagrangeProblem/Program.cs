@@ -18,8 +18,8 @@ namespace LagrangeProblem
             //_2_4.Solve();
             //_2_9.Solve();
             //_2_15.Solve();
-            //MyProblem3.Solve();
-            QazanfarsProblem.Solve();
+            MyProblem3.Solve();
+            //QazanfarsProblem.Solve();
 
             Console.ReadKey();
         }

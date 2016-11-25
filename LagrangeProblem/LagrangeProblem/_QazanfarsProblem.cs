@@ -16,6 +16,7 @@ namespace LagrangeProblem
         }
         static double Lambda(double t, Vector y, double parameter)
         {
+            //Заглушка
             //double a = -Math.Pow(Math.E, -parameter * y[0]) * (1 - parameter * y[0]);
             //double b = parameter * y[3] * Math.Pow(Math.E, -parameter * y[0]) * (-2 + parameter * y[0]);
             //double c = Math.Abs(b - 1) * Math.Sqrt((a + 1) * (a + 1) + (b + 1) * (b + 1) / 4);
